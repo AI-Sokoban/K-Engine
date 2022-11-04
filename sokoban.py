@@ -162,7 +162,7 @@ def isFailed(posBox):
 """Implement all approcahes"""
 
 
-def breadthFirstSearch():
+def breadthFirstSearch(isRender=False):
     """Implement breadthFirstSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -189,7 +189,7 @@ def breadthFirstSearch():
                 actions.append(node_action + [action[-1]])
 
 
-def depthFirstSearch():
+def depthFirstSearch(isRender=False):
     """Implement depthFirstSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -232,7 +232,7 @@ def cost(actions):
     return len([x for x in actions if x.islower()])
 
 
-def uniformCostSearch():
+def uniformCostSearch(isRender=False):
     """Implement uniformCostSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -261,7 +261,7 @@ def uniformCostSearch():
                 actions.push(node_action + [action[-1]], Cost)
 
 
-def aStarSearch():
+def aStarSearch(isRender=False):
     """Implement aStarSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -318,33 +318,34 @@ if __name__ == '__main__':
     gameState = transferToGameState(layout)
     posWalls = PosOfWalls(gameState)
     posGoals = PosOfGoals(gameState)
+    board = BoardManager(layout)
+    renderer = Renderer(board).setCaption("Sokoban")
+    renderer.render()
     solution = []
     if method == 'astar':
         solution = aStarSearch()
     elif method == 'dfs':
         solution = depthFirstSearch()
     elif method == 'bfs':
-        solution = breadthFirstSearch()
+        solution = breadthFirstSearch(isRender=True)
     elif method == 'ucs':
         solution = uniformCostSearch()
     else:
         raise ValueError('Invalid method.')
-    board = BoardManager(layout)
-    renderer = Renderer(board).setCaption("Sokoban")
-    renderer.render()
-    is_buttonclick = False
+
+    isButtonClick = False
     while True:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                is_buttonclick = True
+                isButtonClick = True
             if event.type == pygame.QUIT:
                 pygame.quit()
-        if is_buttonclick == True and len(solution) > 0:
+        if isButtonClick == True and len(solution) > 0:
             act = solution.pop(0)
             board.movePlayer(act.lower())
             renderer.fromInstance(board).render()
             pygame.time.wait(50)
-        elif is_buttonclick == True and len(solution) == 0:
+        elif isButtonClick == True and len(solution) == 0:
             renderer.showMessageBox(message='Sokoban solved!')
 
     time_end = time.time()
