@@ -55,7 +55,7 @@ class Renderer:
         self.screen.fill((0, 0, 0))
 
     def showMessageBox(self, message: str):
-        font = pygame.font.Font(None, 60)
+        font = pygame.font.SysFont('arial', 60)
         # center
         text = font.render(message, True, (255, 255, 255))
         textRect = text.get_rect()

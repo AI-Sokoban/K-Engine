@@ -332,7 +332,8 @@ if __name__ == '__main__':
         solution = uniformCostSearch()
     else:
         raise ValueError('Invalid method.')
-
+    time_end = time.time()
+    print('Runtime of %s: %.2f second.' % (method, time_end-time_start))
     isButtonClick = False
     while True:
         for event in pygame.event.get():
@@ -347,6 +348,3 @@ if __name__ == '__main__':
             pygame.time.wait(50)
         elif isButtonClick == True and len(solution) == 0:
             renderer.showMessageBox(message='Sokoban solved!')
-
-    time_end = time.time()
-    print('Runtime of %s: %.2f second.' % (method, time_end-time_start))
