@@ -52,19 +52,21 @@ class Renderer:
         return self
 
     def clear(self):
-        self.screen.fill((0, 0, 0))
+        self.screen.fill((42, 42, 42))
 
     def showMessageBox(self, message: str):
         font = pygame.font.SysFont('arial', 60)
-        # center
-        text = font.render(message, True, (255, 255, 255))
-        textRect = text.get_rect()
-        textRect.centerx = self.screen.get_rect().centerx
-        textRect.centery = self.screen.get_rect().centery
-        self.screen.blit(text, textRect)
+        message = message.split('|')  # newline
+        for i in range(len(message)):
+            text = font.render(message[i], True, (255, 255, 255))
+            textRect = text.get_rect()
+            textRect.center = (self.screen.get_width() // 2,
+                               (self.screen.get_height()+60) // 2 + i * 60)
+            self.screen.blit(text, textRect)
         pygame.display.update()
 
     def render(self):
+        self.clear()
         toRender = self.board.board_lst
         for i in range(len(toRender)):
             for c in range(len(toRender[i])):
