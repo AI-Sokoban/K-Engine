@@ -272,7 +272,6 @@ def aStarSearch(isRender=False):
     """Implement aStarSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
-
     start_state = (beginPlayer, beginBox)
     frontier = PriorityQueue()
     frontier.push([start_state], heuristic(beginPlayer, beginBox))
@@ -300,7 +299,73 @@ def aStarSearch(isRender=False):
                     node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
                 actions.push(node_action + [action[-1]], Heuristic + Cost)
 
+# เหมือนกับ Astar แค่ลบ Cost ทิ้ง ตอนนี้เหมือนอมันจะติดลูป
+def greedyBestFirstSearch(isRender=False):
+    beginBox = PosOfBoxes(gameState)
+    beginPlayer = PosOfPlayer(gameState)
+    start_state = (beginPlayer, beginBox)
+    frontier = PriorityQueue()
+    frontier.push([start_state], heuristic(beginPlayer, beginBox))
+    exploredSet = set()
+    actions = PriorityQueue()
+    actions.push([0], heuristic(beginPlayer, start_state[1]))
+    while frontier:
+        node = frontier.pop()
+        node_action = actions.pop()
+        if isEndState(node[-1][-1]):
+            print(','.join(node_action[1:]).replace(',', ''))
+            return node_action[1:]
+        if node[-1] not in exploredSet:
+            exploredSet.add(node[-1])
+            for action in legalActions(node[-1][0], node[-1][1]):
+                newPosPlayer, newPosBox = updateState(
+                    node[-1][0], node[-1][1], action)
+                if(isRender):
+                    renderer.render(newPosPlayer, newPosBox)
+                if isFailed(newPosBox):
+                    continue
+                Heuristic = heuristic(newPosPlayer, newPosBox)
+                frontier.push(
+                    node + [(newPosPlayer, newPosBox)], Heuristic )
+                actions.push(node_action + [action[-1]], Heuristic )
 
+
+# def best_first_search(actual_Src, target, n):
+#     visited = [False] * n
+#     pq = PriorityQueue()
+#     pq.put((0, actual_Src))
+#     visited[actual_Src] = True
+     
+#     while pq.empty() == False:
+#         u = pq.get()[1]
+#         # Displaying the path having lowest cost
+#         print(u, end=" ")
+#         if u == target:
+#             break
+ 
+#         for v, c in graph[u]:
+#             if visited[v] == False:
+#                 visited[v] = True
+#                 pq.put((c, v))
+#     print()
+
+# // Pseudocode for Best First Search
+# Best-First-Search(Graph g, Node start)
+#     1) Create an empty PriorityQueue
+#        PriorityQueue pq;
+#     2) Insert "start" in pq.
+#        pq.insert(start)
+#     3) Until PriorityQueue is empty
+#           u = PriorityQueue.DeleteMin
+#           If u is the goal
+#              Exit
+#           Else
+#              Foreach neighbor v of u
+#                 If v "Unvisited"
+#                     Mark v "Visited"                    
+#                     pq.insert(v)
+#              Mark u "Examined"                    
+# End procedure
 """Read command"""
 
 
@@ -338,6 +403,8 @@ if __name__ == '__main__':
         solution = breadthFirstSearch(isRender)
     elif method == 'ucs':
         solution = uniformCostSearch(isRender)
+    elif method == 'gbfs':
+        solution = greedyBestFirstSearch(isRender)
     else:
         raise ValueError('Invalid method.')
     time_end = time.time()
