@@ -377,24 +377,29 @@ def readCommand(argv):
                       help='level of game to play', default='level1.txt')
     parser.add_option('-m', '--method', dest='agentMethod',
                       help='research method', default='bfs')
+    parser.add_option('-r', '--render', dest='render', action="store_true",
+                      help='render searching with pygame', default=False)
     args = dict()
     options, _ = parser.parse_args(argv)
     with open('sokobanLevels/'+options.sokobanLevels, "r") as f:
         layout = f.readlines()
     args['layout'] = layout
     args['method'] = options.agentMethod
+    args['isRender'] = options.render
     return args
 
 
 if __name__ == '__main__':
+    
     time_start = time.time()
-    layout, method = readCommand(sys.argv[1:]).values()
+    layout, method, isRender = readCommand(sys.argv[1:]).values()
     gameState = transferToGameState(layout)
-    renderer = Renderer(gameState)
     posWalls = PosOfWalls(gameState)
     posGoals = PosOfGoals(gameState)
     solution = []
-    isRender = True
+
+    if(isRender): renderer = Renderer(gameState)
+    
     if method == 'astar':
         solution = aStarSearch(isRender)
     elif method == 'dfs':
