@@ -166,7 +166,7 @@ def isFailed(posBox):
 
 """Implement all approcahes"""
 
-def breadthFirstSearch(isRender=False):
+def breadthFirstSearch(renderSearch=False):
     """Implement breadthFirstSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -187,7 +187,7 @@ def breadthFirstSearch(isRender=False):
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(
                     node[-1][0], node[-1][1], action)
-                if(isRender):
+                if(renderSearch):
                     renderer.render(newPosPlayer, newPosBox)
                 if isFailed(newPosBox):
                     continue
@@ -195,7 +195,7 @@ def breadthFirstSearch(isRender=False):
                 actions.append(node_action + [action[-1]])
 
 
-def depthFirstSearch(isRender=False):
+def depthFirstSearch(renderSearch=False):
     """Implement depthFirstSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -215,7 +215,7 @@ def depthFirstSearch(isRender=False):
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(
                     node[-1][0], node[-1][1], action)
-                if(isRender):
+                if(renderSearch):
                     renderer.render(newPosPlayer, newPosBox)
                 if isFailed(newPosBox):
                     continue
@@ -240,7 +240,7 @@ def cost(actions):
     return len([x for x in actions if x.islower()])
 
 
-def uniformCostSearch(isRender=False):
+def uniformCostSearch(renderSearch=False):
     """Implement uniformCostSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -263,7 +263,7 @@ def uniformCostSearch(isRender=False):
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(
                     node[-1][0], node[-1][1], action)
-                if(isRender):
+                if(renderSearch):
                     renderer.render(newPosPlayer, newPosBox)
                 if isFailed(newPosBox):
                     continue
@@ -271,7 +271,7 @@ def uniformCostSearch(isRender=False):
                 actions.push(node_action + [action[-1]], Cost)
 
 
-def aStarSearch(isRender=False):
+def aStarSearch(renderSearch=False):
     """Implement aStarSearch approach"""
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
@@ -293,7 +293,7 @@ def aStarSearch(isRender=False):
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(
                     node[-1][0], node[-1][1], action)
-                if(isRender):
+                if(renderSearch):
                     renderer.render(newPosPlayer, newPosBox)
                 if isFailed(newPosBox):
                     continue
@@ -303,7 +303,7 @@ def aStarSearch(isRender=False):
                 actions.push(node_action + [action[-1]], Heuristic + Cost)
 
 # เหมือนกับ Astar แค่ลบ Cost ทิ้ง ตอนนี้เหมือนอมันจะติดลูป
-def greedyBestFirstSearch(isRender=False):
+def greedyBestFirstSearch(renderSearch=False):
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
     start_state = (beginPlayer, beginBox)
@@ -323,7 +323,7 @@ def greedyBestFirstSearch(isRender=False):
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(
                     node[-1][0], node[-1][1], action)
-                if(isRender):
+                if(renderSearch):
                     renderer.render(newPosPlayer, newPosBox)
                 if isFailed(newPosBox):
                     continue
@@ -380,15 +380,19 @@ def readCommand(argv):
                       help='level of game to play', default='level1.txt')
     parser.add_option('-m', '--method', dest='agentMethod',
                       help='research method', default='bfs')
-    parser.add_option('-r', '--render', dest='render', action="store_true",
+    parser.add_option('-s', '--search', dest='search', action="store_true",
                       help='render searching with pygame', default=False)
+    parser.add_option('-r', '--result', dest='result', action="store_true",
+                      help='render result with pygame', default=False)
     args = dict()
     options, _ = parser.parse_args(argv)
     with open('sokobanLevels/'+options.sokobanLevels, "r") as f:
         layout = f.readlines()
     args['layout'] = layout
     args['method'] = options.agentMethod
-    args['isRender'] = options.render
+    args['renderSearch'] = options.search
+    args['renderResult'] = options.result
+
     return args
 
 
@@ -396,30 +400,30 @@ if __name__ == '__main__':
     p = psutil.Process()
     time_start = time.time()
 
-    layout, method, isRender = readCommand(sys.argv[1:]).values()
+    layout, method, renderSearch, renderResult = readCommand(sys.argv[1:]).values()
     gameState = transferToGameState(layout)
     posWalls = PosOfWalls(gameState)
     posGoals = PosOfGoals(gameState)
     solution = []
 
-    if(isRender): renderer = Renderer(gameState)
+    if(renderSearch): renderer = Renderer(gameState)
     
     if method == 'astar':
-        solution = aStarSearch(isRender)
+        solution = aStarSearch(renderSearch)
     elif method == 'dfs':
-        solution = depthFirstSearch(isRender)
+        solution = depthFirstSearch(renderSearch)
     elif method == 'bfs':
-        solution = breadthFirstSearch(isRender)
+        solution = breadthFirstSearch(renderSearch)
     elif method == 'ucs':
-        solution = uniformCostSearch(isRender)
+        solution = uniformCostSearch(renderSearch)
     elif method == 'gbfs':
-        solution = greedyBestFirstSearch(isRender)
+        solution = greedyBestFirstSearch(renderSearch)
     else:
         raise ValueError('Invalid method.')
     time_end = time.time()
 
+    print('Number of Action:',len(','.join(solution).replace(',', '')))
     print('Runtime of %s: %.2f second.' % (method, time_end-time_start))
-    print('Peak Memory Usage : ',(p.memory_info().peak_wset) / 1024**2,' MB')
+    print('Peak Memory Usage:',(p.memory_info().peak_wset) / 1024**2,'MB')
 
-    if(isRender):
-        renderSolution(layout, solution)
+    if(renderResult): renderSolution(layout, solution)
