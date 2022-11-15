@@ -8,6 +8,7 @@ from board import BoardManager
 import pygame
 import psutil,os
 from renderSolution import renderSolution
+from datetime import datetime
 
 # test memory
 # from guppy import hpy
@@ -388,10 +389,12 @@ def readCommand(argv):
     options, _ = parser.parse_args(argv)
     with open('sokobanLevels/'+options.sokobanLevels, "r") as f:
         layout = f.readlines()
+    args['level'] = options.sokobanLevels
     args['layout'] = layout
     args['method'] = options.agentMethod
     args['renderSearch'] = options.search
     args['renderResult'] = options.result
+
 
     return args
 
@@ -400,7 +403,7 @@ if __name__ == '__main__':
     p = psutil.Process()
     time_start = time.time()
 
-    layout, method, renderSearch, renderResult = readCommand(sys.argv[1:]).values()
+    level,layout, method, renderSearch, renderResult = readCommand(sys.argv[1:]).values()
     gameState = transferToGameState(layout)
     posWalls = PosOfWalls(gameState)
     posGoals = PosOfGoals(gameState)
@@ -422,8 +425,26 @@ if __name__ == '__main__':
         raise ValueError('Invalid method.')
     time_end = time.time()
 
-    print('Number of Action:',len(','.join(solution).replace(',', '')))
-    print('Runtime of %s: %.2f second.' % (method, time_end-time_start))
-    print('Peak Memory Usage:',(p.memory_info().peak_wset) / 1024**2,'MB')
+    timeUsage = time_end-time_start
+    memoryUsage = (p.memory_info().peak_wset) / 1024**2
+    numAction = len(','.join(solution).replace(',', ''))
+    print('Number of Action:',numAction)
+    print('Runtime of %s: %.2f second.' % (method,timeUsage ))
+    print('Peak Memory Usage:',memoryUsage,'MB')
+
+
+    # write solution detail to file
+    resultDir = "results"
+    filename = f"solution-{method}-{level}"
+    relPath = os.path.join(resultDir, filename)
+    with open(relPath, "w") as f:
+        now = datetime.now()
+        nowStrft = now.strftime("%d/%m/%Y, %H:%M:%S")
+        f.write(f"Finished at: {nowStrft}\n")
+        f.write(f"Number of action: {numAction}\n")
+        f.write(f"Action : {','.join(solution).replace(',', '')} \n")
+        f.write(f"Time usage: {timeUsage} seconds\n")
+        f.write(f"Memory usage: {memoryUsage} bytes\n")
+        f.write("\n")
 
     if(renderResult): renderSolution(layout, solution)
