@@ -7,7 +7,8 @@ from newRender import Renderer
 from board import BoardManager
 import pygame
 from renderSolution import renderSolution
-
+import random
+import numpy as np
 
 class PriorityQueue:
     """Define a PriorityQueue data structure that will be used"""
@@ -15,18 +16,52 @@ class PriorityQueue:
     def __init__(self):
         self.Heap = []
         self.Count = 0
+        self.Size=0
 
     def push(self, item, priority):
         entry = (priority, self.Count, item)
         heapq.heappush(self.Heap, entry)
         self.Count += 1
+        self.Size+=1
 
     def pop(self):
         (_, _, item) = heapq.heappop(self.Heap)
+        self.Size-=1
         return item
 
+    def random_pop_from_top_n(self,n,popIndex):
+        rank=[]
+        for i in range(n):
+            (heuristic, _, item) = heapq.heappop(self.Heap)
+            self.Size-=1
+            rank.append([item,heuristic])
+        popped_element=rank.pop(popIndex)
+        item=popped_element[0]
+        heuristic=popped_element[1]
+        for i in range(len(rank)):
+            self.push(rank[i][0],rank[i][1])
+        return item,heuristic
     def isEmpty(self):
         return len(self.Heap) == 0
+
+class KQueue:
+    """Define a PriorityQueue data structure that will be used"""
+
+    def __init__(self):
+        self.kQueue = []
+        self.Count = 0
+
+    def push(self, item, priority):
+        entry = (priority, self.Count, item)
+        self.kQueue.append(entry)
+        self.Count += 1
+
+    def pop(self):
+        (priority, _, item) = self.kQueue.pop()
+        return priority,item
+
+    def isEmpty(self):
+        return len(self.kQueue) == 0
 
 
 """Load puzzles and define the rules of sokoban"""
@@ -329,93 +364,125 @@ def greedyBestFirstSearch(isRender=False):
                     node + [(newPosPlayer, newPosBox)], Heuristic )
                 actions.push(node_action + [action[-1]], Heuristic )
 
+def schedule(t):
+    T_MAX=10*6
+    return T_MAX*(0.98**t)
 
-def iterative_deepening_a_star():
-    """
-    Performs the iterative deepening A Star (A*) algorithm to find the shortest path from a start to a target node.
-    Can be modified to handle graphs by keeping track of already visited nodes.
-    :param tree:      An adjacency-matrix-representation of the tree where (x,y) is the weight of the edge or 0 if there is no edge.
-    :param heuristic: An estimation of distance from node x to y that is guaranteed to be lower than the actual distance. E.g. straight-line distance.
-    :param start:      The node to start from.
-    :param goal:      The node we're searching for.
-    :return: number shortest distance to the goal node. Can be easily modified to return the path.
-    """
+def greedyBestFirstSearchModified(isRender=False):
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
-    threshold = heuristic(beginPlayer, beginBox)
-    # print('up',beginPlayer, beginBox)
-    startState = [(beginPlayer, beginBox)]
-    startAction=[0]
-    while True:
-        # print("Iteration with threshold: " + str(threshold))
-        distance,solution = iterative_deepening_a_star_rec(startState,startAction, 0, threshold)
-        if distance == float("inf"):
-            # Node not found and no more nodes to visit
-            return -1
-        elif distance < 0:
-            # if we found the node, the function returns the negative distance
-            # print("Found the node we're looking for!")
-            return solution
+    start_state = (beginPlayer, beginBox)
+    frontier = PriorityQueue()
+    frontier.push([start_state], heuristic(beginPlayer, beginBox))
+    exploredSet = set()
+    actions = PriorityQueue()
+    actions.push([0], heuristic(beginPlayer, start_state[1]))
+
+    t=0
+    prev_node_heuristic=1000000.0
+    while frontier:
+
+        # if(int(frontier.Size*0.3)<=0):
+        #     n=1
+        # else:
+        #     n=int(frontier.Size*0.3)
+        bound=10
+        if(frontier.Size<=bound):
+            n=frontier.Size
         else:
-            # if it hasn't found the node, it returns the (positive) next-bigger threshold
-            threshold = distance
+            n=bound
 
-def iterative_deepening_a_star_rec( node,node_action, distance, threshold,isRender=True):
-    """
-    Performs DFS up to a depth where a threshold is reached (as opposed to interative-deepening DFS which stops at a fixed depth).
-    Can be modified to handle graphs by keeping track of already visited nodes.
-    :param tree:      An adjacency-matrix-representation of the tree where (x,y) is the weight of the edge or 0 if there is no edge.
-    :param heuristic: An estimation of distance from node x to y that is guaranteed to be lower than the actual distance. E.g. straight-line distance.
-    :param node:      The node to continue from.
-    :param goal:      The node we're searching for.
-    :param distance:  Distance from start node to current node.
-    :param threshold: Until which distance to search in this iteration.
-    :return: number shortest distance to the goal node. Can be easily modified to return the path.
-     """
-    # print("Visiting Node " + str(node))
+        # print(frontier.Size,n)
+        randNum=random.randint(0,n-1)
+        node,node_heuristic = frontier.random_pop_from_top_n(n,randNum)
+        node_action, node_action_heuristic= actions.random_pop_from_top_n(n,randNum)
+        if isEndState(node[-1][-1]):
+            print(','.join(node_action[1:]).replace(',', ''))
+            return node_action[1:]
 
+        # T=schedule(t)
+        # if T<0.1:
+        #     T=0.1
+        choice=[True,False]
+        expand=False
+        deltaE=node_heuristic-prev_node_heuristic
+        if(deltaE>0.0):
+            # prob=1/(2.7**(abs(deltaE/T)))
+            # if prob<0.001:
+            #     prob=0.001
+            prob=0.001
+            expand=np.random.choice(choice, 1,p = [prob,1-prob])[0]
+        else:
+            expand=True
+        if(expand):
+            if node[-1] not in exploredSet:
+                exploredSet.add(node[-1])
+                for action in legalActions(node[-1][0], node[-1][1]):
+                    newPosPlayer, newPosBox = updateState(
+                        node[-1][0], node[-1][1], action)
+                    if(isRender):
+                        renderer.render(newPosPlayer, newPosBox)
+                    if isFailed(newPosBox):
+                        continue
+                    Heuristic = heuristic(newPosPlayer, newPosBox)
+                    frontier.push(
+                        node + [(newPosPlayer, newPosBox)], Heuristic )
+                    actions.push(node_action + [action[-1]], Heuristic )
+                prev_node_heuristic=node_heuristic
+        else:
+            frontier.push(node, node_heuristic)
+            actions.push(node_action, node_action_heuristic)
+        t+=1
 
-    # print('down',node[-1][0],node[-1][1])
-    estimate = distance + heuristic(node[-1][0],node[-1][1])
-    if estimate > threshold:
-        # print("Breached threshold with heuristic: " + str(estimate))
-        return estimate,node_action[1:]
-    if isEndState(node[-1][-1]):
-        # We have found the goal node we we're searching for
-        print(','.join(node_action[1:]).replace(',', ''))
-        return -distance,node_action[1:]
-    # ...then, for all neighboring nodes....
-    min = float("inf")
-    for action in legalActions(node[-1][0], node[-1][1]):
-        newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
-        
-        if isRender:
-            renderer.render(newPosPlayer, newPosBox)
+def simulatedAnnealingSearch(isRender=False):
+    beginBox = PosOfBoxes(gameState)
+    beginPlayer = PosOfPlayer(gameState)
+    start_state = (beginPlayer, beginBox)
+
+    frontier = KQueue()
+    frontier.push([start_state], heuristic(beginPlayer, beginBox))
+    actions = KQueue()
+    actions.push([0], heuristic(beginPlayer, start_state[1]))
+
+    t=0
+    while frontier:
+        T=schedule(t)
+        hValue,node = frontier.pop()
+        hValue,node_action = actions.pop()
+        if isEndState(node[-1][-1]):
+                print(','.join(node_action[1:]).replace(',', ''))
+                return node_action[1:]
+        choice=[True,False]
+        expand=True
+        prevHValue=12
+        deltaE=hValue-prevHValue
+        prob=(1/(2.72**(deltaE/T)))
+        # if(hValue>prevHValue):
+        print(np.random.choice(choice, 1,p = [prob,1-prob]))
+
+        # if(expand):
+        #     legalActions=legalActions(node[-1][0], node[-1][1])
+        #     listLegalActions=list(legalActions)
+        #     random.shuffle(listLegalActions)
+        #     shuffledTupLegalActions = tuple(listLegalActions)
+        #     for action in shuffledTupLegalActions :
+
+        #         newPosPlayer, newPosBox = updateState(
+        #             node[-1][0], node[-1][1], action)
+        #         if(isRender):
+        #             renderer.render(newPosPlayer, newPosBox)
+        #         if isFailed(newPosBox):
+        #             continue
+        #         Heuristic = heuristic(newPosPlayer, newPosBox)
+        #         frontier.push(
+        #                 node + [(newPosPlayer, newPosBox)], Heuristic)
             
-        if isFailed(newPosBox):
-            continue
-        if (newPosPlayer, newPosBox) not in node:
-            newNode = node + [(newPosPlayer, newPosBox)]
-            newAction=node_action + [action[-1]]
-            Cost = cost(node_action[1:])
-            t,_ = iterative_deepening_a_star_rec(newNode,newAction, distance + Cost, threshold)
-            if t < 0:
-                return t,node_action[1:]
-            elif t < min:
-                min = t
-            newNode.pop()
-            newAction.pop()
-             
-    # for i in range(len(tree[node])):
-    #     if tree[node][i] != 0:
-    #         t = iterative_deepening_a_star_rec(tree, heuristic, i, goal, distance + tree[node][i], threshold)
-    #         if t < 0:
-    #             # Node found
-    #             return t
-    #         elif t < min:
-    #             min = t
+        #         actions.push(node_action + [action[-1]], Heuristic)
+        # prevHValue,prevNode =hValue,node
+        # t+=1
 
-    return min,node_action[1:]
+
+
 # def best_first_search(actual_Src, target, n):
 #     visited = [False] * n
 #     pq = PriorityQueue()
@@ -484,7 +551,7 @@ if __name__ == '__main__':
     posGoals = PosOfGoals(gameState)
     solution = []
 
-    if isRender: renderer = Renderer(gameState)
+    if(isRender): renderer = Renderer(gameState)
     
     if method == 'astar':
         solution = aStarSearch(isRender)
@@ -495,13 +562,10 @@ if __name__ == '__main__':
     elif method == 'ucs':
         solution = uniformCostSearch(isRender)
     elif method == 'gbfs':
-        solution = greedyBestFirstSearch(isRender)
-    elif method == 'idastar':
-        solution = iterative_deepening_a_star()
-        print(solution)
+        solution = greedyBestFirstSearchModified(isRender)
     else:
         raise ValueError('Invalid method.')
     time_end = time.time()
     print('Runtime of %s: %.2f second.' % (method, time_end-time_start))
-    if isRender:
+    if(isRender):
         renderSolution(layout, solution)
