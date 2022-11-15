@@ -1,254 +1,255 @@
-A sokoban game solver
-===========================
-This project proposed a AI solver for sokoban (japanese for warehouse keeper) which is a difficult computational problem. The algorithm being used consisted of BFS (breadth first search), DFS (depth first search), UCS (uniform cost search) and A* (A star search).
+ตัวแก้เกม sokoban
+=============================
+โครงการนี้เสนอตัวแก้ปัญหา AI สำหรับ sokoban (ภาษาญี่ปุ่นสำหรับผู้ดูแลคลังสินค้า) ซึ่งเป็นปัญหาการคำนวณที่ยาก อัลกอริทึมที่ใช้ประกอบด้วย BFS (การค้นหาแบบกว้างๆ) DFS (การค้นหาเชิงลึกก่อน) UCS (การค้นหาต้นทุนสม่ำเสมอ) และ A* (ค้นหาดาว).
 
-## 目录
+## สารบัญ
 
-* [0. 使用方法](#0)
-* [1. 总览](#1)
-* [2. 结果对比](#2)
+* [0. วิธีใช้งาน](#0)
+* [1. ภาพรวม](#1)
+* [2. การเปรียบเทียบผลลัพธ์](#2)
 
 <a id="0"></a>
-## 0. 使用方法
+## 0. วิธีใช้งาน
 
-1. 需要导入的库有：`sys`，`collections`，`numpy`，`heapq`，`time`。
+1. ไลบรารีที่ต้องนำเข้าคือ: 'sys', 'collections', 'numpy', 'heapq', 'time'
 
-2. 下载到本地后运行`sokoban.py`文件即可。
+2. หลังจากดาวน์โหลดในเครื่องแล้ว ให้เรียกใช้ไฟล์ `sokoban.py`
 
-### 查看帮助
+### ดูความช่วยเหลือ
 
 ```
 $ python sokoban.py --help
 ```
 ```
-Usage: sokoban.py [options]
+การใช้: sokoban.py [ตัวเลือก]
 
-Options:
-  -h, --help            show this help message and exit
+ตัวเลือก:
+  -h, --help แสดงข้อความช่วยเหลือนี้และออก
   -l SOKOBANLEVELS, --level=SOKOBANLEVELS
-                        level of game to play (test1-10.txt, level1-5.txt)
+                        ระดับของเกมที่จะเล่น (test1-10.txt, level1-5.txt)
   -m AGENTMETHOD, --method=AGENTMETHOD
-                        research method (bfs, dfs, ucs, astar)
+                        วิธีการวิจัย (bfs, dfs, ucs, astar)
 ```
 
-`-l`：地图分为test和level，test的比较简单，level的比较难。
-`-m`：搜索算法为bfs，dfs，ucs或astar。
+`-l`: แผนที่แบ่งออกเป็นการทดสอบและระดับ การทดสอบค่อนข้างง่าย และระดับที่ยากขึ้น
+`-m`: อัลกอริทึมการค้นหาคือ bfs, dfs, ucs หรือ astar
 
-### 运行示例
+### เรียกใช้ตัวอย่าง
 
 ```
 $ python sokoban.py -l test1.txt -m bfs
 ```
 ```
 rUUdRdrUUluL
-Runtime of bfs: 0.15 second.
+รันไทม์ของ bfs: 0.15 วินาที
 ```
-第一行输出为推箱者的动作，`u`，`d`，`l`，`r`分别代表上、下、左、右的移动，对应的大写字母则代表该方向上推着箱子移动。第二行输出为程序的运行时间。
+ผลลัพธ์ของบรรทัดแรกคือการกระทำของผู้กด `u` `d` `l` `r` แทนการเคลื่อนที่ขึ้น ลง ซ้ายและขวาตามลำดับ และตัวพิมพ์ใหญ่ที่เกี่ยวข้องแสดงถึงการผลักกล่อง ไปในทิศทางนี้ บรรทัดที่สองแสดงเวลาทำงานของโปรแกรม
 
 <a id="1"></a>
-## 1. 总览
+## 1. ภาพรวม
 
-Sokoban，也就是推箱子游戏，[游戏链接](https://www.mathsisfun.com/games/sokoban.html)，玩家需要把所有箱子推到目的地才算成功。
+Sokoban หรือที่รู้จักในชื่อเกม Sokoban [Game Link](https://www.mathsisfun.com/games/sokoban.html) ผู้เล่นต้องผลักกล่องทั้งหมดไปยังจุดหมายปลายทางเพื่อประสบความสำเร็จ
 
-### 地图示例（`level1.txt`）
+### ตัวอย่างแผนที่ (`level1.txt`)
 
-**图片形式：**
+**รูปแบบภาพ:**
 
 ![](./img/level1.png)
 
-**输入形式：**
+**แบบฟอร์มการป้อนข้อมูล:**
 
 ```
   #####
-###   #
-#.&B  #
-### B.#
-#.##B #
+### #
+#.&บี #
+###บ.#
+#.##บี #
 # # . ##
-#B XBB.#
-#   .  #
-######## 
+#บีเอ็กซ์บีบี#
+# . #
+##########
 ```
 
-其中`#`是墙，`.`是目的地，`B`是箱子（`X`是箱子在目的地上），`&`是推箱子的人（`%`是箱子在目的地上），空白处为可移动空间。
+โดยที่ `#` คือกำแพง `.` คือปลายทาง `B` คือกล่อง (`X` คือกล่องที่ปลายทาง) `&` คือคนที่ผลักกล่อง (`%` คือกล่องบน ปลายทาง) ช่องว่างคือพื้นที่ที่สามารถเคลื่อนย้ายได้
 
-### 思路
+### ไอเดีย
 
-搜索算法在这里的使用，简单理解就是当前状态下推箱者采取一个可能动作后，产生下一状态，以此类推，直到最终状态为结束状态。既然用到的是搜索算法，首先要确定的是state space graph（SSG）和search tree（ST）。如果直接把输入的整个地图作为SSG存储在数据结构中，会使内存的占用随搜索的进行而飙升，所以必须重新定义新的SSG，既能减少空间占用，又能代表足够的信息。在推箱子这个问题中，其实关键的部分仅为箱子的位置和人的位置，因为墙和目的地的位置都是不变的。所以定义SSG的样式如下所示，其中第一个tuple代表当前人的坐标，第二个tuple代表当前箱子的坐标。
+ความเข้าใจง่ายๆ เกี่ยวกับการใช้อัลกอริธึมการค้นหาในที่นี้คือ ในสถานะปัจจุบัน ตัวผลักจะดำเนินการที่เป็นไปได้เพื่อสร้างสถานะถัดไป และอื่นๆ จนกว่าสถานะสุดท้ายจะเป็นสถานะสิ้นสุด เนื่องจากมีการใช้อัลกอริธึมการค้นหา สิ่งแรกที่ต้องกำหนดคือกราฟพื้นที่สถานะ (SSG) และแผนผังการค้นหา (ST) หากแมปอินพุตทั้งหมดถูกจัดเก็บโดยตรงเป็น SSG ในโครงสร้างข้อมูล การใช้หน่วยความจำจะเพิ่มขึ้นเมื่อการค้นหาดำเนินไป ดังนั้น SSG ใหม่จึงต้องกำหนดขึ้นใหม่ ซึ่งไม่เพียงช่วยลดการยึดครองพื้นที่ แต่ยังแสดงข้อมูลที่เพียงพออีกด้วย ในปัญหาของ sokoban ส่วนสำคัญเป็นเพียงตำแหน่งของกล่องและตำแหน่งของบุคคล เพราะตำแหน่งของกำแพงและปลายทางเหมือนกัน ดังนั้น รูปแบบของการกำหนด SSG จึงเป็นดังนี้ โดยที่ทูเพิลแรกแทนพิกัดของบุคคลปัจจุบัน และทูเพิลที่สองแทนพิกัดของกล่องปัจจุบัน
 
 ```
 ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)))
 ```
 
-而ST就是当前SSG基于推箱者可行的动作进行分枝，每一个动作都会导致新的不同的SSG产生，最终形成很多个branch和node。只要所有箱子的坐标和目的地的坐标完全契合，就说明游戏结束（胜利）。但推箱子游戏，往往会把箱子推到一些位置，比如说死角，这种局面其实也会导致游戏结束（失败），就没有继续走下去的必要了。因此，利用这些导致死局的pattern可以帮助我们修剪树（prune tree），使分裂的node减少许多，进而减少内存的占用。下图展示一些死局的pattern，以一个箱子为中心，如果周围一圈内出现这些情况，则说明该当前态没有再分裂下去的必要了。
+ST เป็นการแตกแขนงของ SSG ปัจจุบันตามการกระทำที่เป็นไปได้ของ pusher การดำเนินการแต่ละครั้งจะนำไปสู่การสร้าง SSG ใหม่และแตกต่างกัน และในที่สุดจะมีการสร้างกิ่งและโหนดจำนวนมากขึ้น ตราบใดที่พิกัดของกล่องทั้งหมดและพิกัดของปลายทางตรงกันทุกประการ เกมก็จะจบลง (ชัยชนะ) แต่ในเกม sokoban กล่องมักจะถูกผลักไปยังตำแหน่งบางอย่าง เช่น ทางตัน สถานการณ์นี้จะนำไปสู่การสิ้นสุดของเกม (ล้มเหลว) จริง ๆ ดังนั้นจึงไม่จำเป็นต้องดำเนินการต่อ ดังนั้น การใช้รูปแบบเหล่านี้ที่นำไปสู่ทางตันสามารถช่วยเราตัดต้นไม้ได้ ดังนั้นจำนวนโหนดที่แยกออกจึงลดลงอย่างมาก ซึ่งจะช่วยลดรอยเท้าของหน่วยความจำ รูปต่อไปนี้แสดงรูปแบบตายตัว โดยมีกล่องอยู่ตรงกลาง หากสถานการณ์เหล่านี้ปรากฏในวงกลมรอบข้างแสดงว่าสถานะปัจจุบันไม่จำเป็นต้องแยกจากกันอีกต่อไป
 
 ![](./img/dead_patterns.jpg)
 
-另外为了避免推箱者做无意义的移动，比如不推箱子来回晃悠，我们要让每次分枝后的SSG与同一条分枝上的SSG不重复，即某个“人的位置和所有箱子的位置”不能重复出现。
+นอกจากนี้ เพื่อป้องกันไม่ให้ผู้ผลักทำการเคลื่อนไหวที่ไร้ความหมาย เช่น การโยกไปมาโดยไม่กดกล่อง เราจำเป็นต้องสร้าง SSG หลังจากที่แต่ละสาขาไม่ทำซ้ำ SSG บนกิ่งเดียวกัน นั่นคือ ตำแหน่งของ a ไม่สามารถทำซ้ำ "บุคคลและทุกช่อง" "ตำแหน่ง" ได้
 
-然后就是算法的部分，BFS和DFS就不多说了，一个“每条路都走一小步慢慢走”，一个”一条路走到死再走下一条“。而UCS加入了cost function，就是”挑最节省成本的路走“，这里的cost function定义为：到目当前状态为止，所有没推着箱子走的步数。这样能够激励推箱者尽可能做有意义的移动，而不是不推箱子逛该。最后A*，在cost function上加入heuristic function，目的是激励推箱者不单去推箱子，并且还要把箱子推往目的地。这里的heuristic function用的是manhatten distance，定义为：到目当前状态为止，所有箱子按顺序排列的位置和所有目的地按顺序排列的位置，两两间的manhatten distance总和。
+จากนั้นมีส่วนหนึ่งของอัลกอริธึม BFS และ DFS จะไม่พูดอะไรมาก หนึ่งคือ "ก้าวเล็ก ๆ สำหรับแต่ละถนนและเดินช้าๆ" และอีกทางหนึ่งคือ "ถนนสายหนึ่งไปสู่ความตายแล้วต่อไป" ฟังก์ชันต้นทุนถูกเพิ่มใน UCS ซึ่งก็คือ "ใช้วิธีที่คุ้มค่าที่สุด" ฟังก์ชันต้นทุนในที่นี้ถูกกำหนดเป็น: จำนวนขั้นตอนที่ดำเนินการโดยไม่ทำให้กล่องอยู่ในสถานะปัจจุบัน สิ่งนี้จูงใจให้ผู้ผลักทำการเคลื่อนไหวที่มีความหมายให้มากที่สุด แทนที่จะเดินไปรอบๆ โดยไม่กดกล่อง สุดท้าย A* การเพิ่มฟังก์ชันฮิวริสติกให้กับฟังก์ชันต้นทุน จุดประสงค์คือเพื่อกระตุ้นให้ผู้ผลักไม่เพียงแต่ผลักกล่อง แต่ยังเพื่อผลักกล่องไปยังปลายทางด้วย ฟังก์ชันฮิวริสติกในที่นี้ใช้ระยะห่างแบบแมนแฮตเทน ซึ่งหมายถึงผลรวมของระยะทางแบบแมนแฮตเทนระหว่างตำแหน่งลำดับของกล่องทั้งหมดและตำแหน่งลำดับของปลายทางทั้งหมดจนถึงสถานะปัจจุบัน
 
 <a id="2"></a>
-## 2. 结果对比
+## 2. การเปรียบเทียบผลลัพธ์
 
-* BFS：
+*บีเอฟเอส:
 
 ```
 $ python sokoban.py -l test1.txt -m bfs
 rUUdRdrUUluL
-Runtime of bfs: 0.15 second.
+รันไทม์ของ bfs: 0.15 วินาที
 
 $ python sokoban.py -l test1.txt -m bfs
 rUUdRdrUUluL
-Runtime of bfs: 0.13 second.
+รันไทม์ของ bfs: 0.13 วินาที
 
 $ python sokoban.py -l test2.txt -m bfs
-UUddrrrUU
-Runtime of bfs: 0.01 second.
+UddrrrUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+รันไทม์ของ bfs: 0.01 วินาที
 
 $ python sokoban.py -l test3.txt -m bfs
 LrdrddDLdllUUdR
-Runtime of bfs: 0.27 second.
+รันไทม์ของ bfs: 0.27 วินาที
 
 $ python sokoban.py -l test4.txt -m bfs
 llldRRR
-Runtime of bfs: 0.01 second.
+รันไทม์ของ bfs: 0.01 วินาที
 
-test5.txt: more than 1 minute.
+test5.txt: มากกว่า 1 นาที
 
 $ python sokoban.py -l test6.txt -m bfs
 dlluRdrUUUddrruuulL
-Runtime of bfs: 0.02 second.
+รันไทม์ของ bfs: 0.02 วินาที
 
 $ python sokoban.py -l test7.txt -m bfs
 LUUUluRddddLdlUUUUluR
-Runtime of bfs: 1.25 second.
+รันไทม์ของ bfs: 1.25 วินาที
 
 $ python sokoban.py -l test8.txt -m bfs
-llDDDDDDldddrruuLuuuuuuurrdLulDDDDDDlllddrrUdlluurRdddrruuLUUUUUUluRdddddddrddlluUdlluurRdrUUUUUU
-Runtime of bfs: 0.30 second.
+llDDDDDDldddrruuLuuuuuurrdLulDDDDDDlllddrrUdlluurRdddrruuLUUUUUUluRddddddddrddlluUdlluurRdrUUUUUU
+รันไทม์ของ bfs: 0.30 วินาที
 
 $ python sokoban.py -l level1.txt -m bfs
 RurrddddlDRuuuuLLLrdRDrddlLdllUUdR
-Runtime of bfs: 35.04 second.
+รันไทม์ของ bfs: 35.04 วินาที
 ```
 
-* DFS：
+*ดีเอฟเอส:
 
 ```
 $ python sokoban.py -l test1.txt -m dfs
 rrUrdllluRRlldrrrUlllururrDLrullldRldrrUruLrdllldrrdrUlllurrurDluLrrdllldrrdrUU
-Runtime of dfs: 0.09 second.
+รันไทม์ของ dfs: 0.09 วินาที
 
 $ python sokoban.py -l test2.txt -m dfs
-rrrUlldlUrrrUlldrrdllluU
-Runtime of dfs: 0.01 second.
+รรรรรรรรรรรรรรรรรรรรรรรรรรรรรรรรรรร
+รันไทม์ของ dfs: 0.01 วินาที
 
 $ python sokoban.py -l test3.txt -m dfs
 rrdldrdllDRlldlUrrrdrruLrdllLrrrululldRllldRlurrrdrruLrdllUrrdllLrrrullllldRRRlllurrrrrdLrulllllUdrrrrrdlLrrullllldrRRlllurrrrrdLrullluRldrrrdlLrrullllldrRRlllurrrrrdLrulllururulluLrrrdlddldrrrdlLrrullllldrRRlllurrrrrdLrulUlldrrrdlLrrullllldrRRlllurrrrrdLrulllurrUldrdrdlLrrullllldrRRlllurrrrrdLrulllurrululurrDDldldrrrdlLrrulllururDlldrdrruLrdllLrrrululldRllldRlurrrdLrrruLrdlllulldRRRlllurrurrdrdLrulL
-Runtime of dfs: 0.36 second.
+รันไทม์ของ dfs: 0.36 วินาที
 
 $ python sokoban.py -l test4.txt -m dfs
-rrrdllllLrrrrrdllllllluRRRR
-Runtime of dfs: 0.01 second.
+กรี้สสสสสสสสสสสสสสส
+รันไทม์ของ dfs: 0.01 วินาที
 
-test5.txt: more than 1 minute.
+test5.txt: มากกว่า 1 นาที
 
 $ python sokoban.py -l test6.txt -m dfs
-rrdlllluRRlldrrrruLrdllUUUddrrdlllluuuurRlldddrrrruuuLL
-Runtime of dfs: 0.02 second.
+กรี๊สสสสสสสสสสสสสสสสสสสสสส
+รันไทม์ของ dfs: 0.02 วินาที
 
 $ python sokoban.py -l test7.txt -m dfs
-rdllllurRlldrrrruulLrrdLrdllllurRlldrrrruullLrrrdLrdllllurRlldrrrruulluulldDrrrrdLrdllllUrdrrrulLrrdlllluUrrrrdllLrrrullllUdrrrrdllldlUrrrrulluululldRRllurrrrrdddllldrrrdlllluUrrrruuullllldrDDrrrrdllldlUrrrrulluUlllurrRllldrrrddrrdllllUrrrruuuLrdddllllUdrruuluRllldRRllurrrDllddrrrruuuLrdddlllluurrDDrrdlLrrdlllluRRlldrrrruulllluuruRllldrrrddrrdLrdllllurRlldrrrruuuuuLrdddlllldrrdrUrdllllurrulluuruRllldrrrddlldrrrruLrdllllurRlldrrrruuuuLrdddLrdlllluuuruRllldrrrdDrruuuLrdddlllluuruRllldrrrddrrdlLrrdlllluurrrruuuLrdddllllddrrrrullLrrrdllllUrrrrulluulldDrrrruuulLrrdddlllluulurRRllldrrrddrrdllldlUrrrruuuuLrdddllldrrrdlllluUrrrruuulLrrdddlluulllurRRllldrrrddrrdlllluUdrrrruuuLrdddlllluUruRldrddrrdlllluuuluR
-Runtime of dfs: 0.78 second.
+rdllllurRlldrrrruulLrrdLrdllllurRlldrrrruullLrrrdLrdllllurRlldrrrruulluulldDrrrrdLrdllllUrdrrrulLrrdlllluUrrrrdllLrrrullllUdrrrrdllldlUrrrrulluululldRRllurrrrrdddllldrrrdlllluUrrrruuullllldrDDrrrrdllldlUrrrrulluUlllurrRllldrrrddrrdllllUrrrruuuLrdddllllUdrruuluRllldRRllurrrDllddrrrruuuLrdddlllluurrDDrrdlLrrdlllluRRlldrrrruulllluuruRllldrrrddrrdLrdllllurRlldrrrruuuuuLrdddlllldrrdrUrdllllurrulluuruRllldrrrddlldrrrruLrdllllurRlldrrrruuuuLrdddLrdlllluuuruRllldrrrdDrruuuLrdddlllluu
+ruRllldrrrddrrdlLrrdlllluurrrruuLrdddllllddrrrrullLrrrdllllUrrrrulluulDrrdddlllluulRRllldrrddrrdllldlUrrruuuLrdddllldrrrdllllluUrrrruuulLrrdddllulllullRRllldrrddrrrllluUdrrrruuUlldruRldrlu
+เวลารันไทม์ของ dfs: 0.78 วินาที
 
-$ python sokoban.py -l test8.txt -m dfs
+$ หลาม sokoban.py -l test8.txt -m dfs
 llDlurrrdLrullldRDDDDDlllddrrdrruuLrddllulluurrruuuuulurrrdLrullldRdddddlllddrrUruLruuuuulurrrdLrullDDDDDDlddlluuRRllddrrdrruuLrddllulluurrDrUldrrddllUlluurrrUdlllddrrUruLruUddldrrddllulluuRlddrrdrruuluLruuUdddldrrddllulluuRlddrrdrruuluLruuuUddddldrrddllulluuRlddrrdrruuluLruuuuUluRldrdddddldrrddllulluuRRllddrrdrruulUUUUUU
-Runtime of dfs: 0.11 second.
+เวลารันไทม์ของ dfs: 0.11 วินาที
 
-level1.txt: more than 1 minute.
+level1.txt: มากกว่า 1 นาที
 ```
 
-* UCS：
+* ยูซีเอส:
 
 ```
-$ python sokoban.py -l test1.txt -m ucs
+$ หลาม sokoban.py -l test1.txt -m ucs
 rURdrUUlLdlU
-Runtime of ucs: 0.09 second.
+เวลารันไทม์ของ ucs: 0.09 วินาที
 
-$ python sokoban.py -l test2.txt -m ucs
-UUddrrrUU
-Runtime of ucs: 0.01 second.
+$ หลาม sokoban.py -l test2.txt -m ucs
+UUdrrrrUU
+เวลารันไทม์ของ ucs: 0.01 วินาที
 
-$ python sokoban.py -l test3.txt -m ucs
+$ หลาม sokoban.py -l test3.txt -m ucs
 LrdrddDLdllUUdR
-Runtime of ucs: 0.17 second.
+เวลารันไทม์ของ ucs: 0.17 วินาที
 
-$ python sokoban.py -l test4.txt -m ucs
+$ หลาม sokoban.py -l test4.txt -m ucs
 llldRRR
-Runtime of ucs: 0.01 second.
+เวลารันไทม์ของ ucs: 0.01 วินาที
 
-test5.txt: more than 1 minute.
+test5.txt: มากกว่า 1 นาที
 
-$ python sokoban.py -l test6.txt -m ucs
+$ หลาม sokoban.py -l test6.txt -m ucs
 dlluRdrUUUddrruuulL
-Runtime of ucs: 0.02 second.
+เวลารันไทม์ของ ucs: 0.02 วินาที
 
-$ python sokoban.py -l test7.txt -m ucs
+$ หลาม sokoban.py -l test7.txt -m ucs
 LUUUluRddddLdlUUUUluR
-Runtime of ucs: 0.94 second.
+เวลารันไทม์ของ ucs: 0.94 วินาที
 
-$ python sokoban.py -l test8.txt -m ucs
-llDDDDDDldddrruuLuuuuuuurrdLulDDDDDDlllddrrUdlluurRdddrruuLUUUUUUluRdddddddrddlluUdlluurRdrUUUUUU
-Runtime of ucs: 0.31 second.
+$ หลาม sokoban.py -l test8.txt -m ucs
+llDDDDDDldddrruuลูลูฮูลูลูDDDDDDlllddrrUdlluurRdddrruuLUUUUUUลูRddddddrdlluUdlluurRdrUUUUUU
+เวลารันไทม์ของ ucs: 0.31 วินาที
 
-$ python sokoban.py -l level1.txt -m ucs
+$ หลาม sokoban.py -l level1.txt -m ucs
 RurrddddlDRuuuuLLLrdRDrddlLdllUUdR
-Runtime of ucs: 33.22 second.
+เวลารันไทม์ของ ucs: 33.22 วินาที
 ```
 
-* A star
+*ดวงดาว
 
 ```
-$ python sokoban.py -l test1.txt -m astar
+$ หลาม sokoban.py -l test1.txt -m astar
 rUUdRdrUUluL
-Runtime of astar: 0.01 second.
+รันไทม์ของดาวฤกษ์: 0.01 วินาที
 
-$ python sokoban.py -l test2.txt -m astar
-UUddrrrUU
-Runtime of astar: 0.01 second.
+$ หลาม sokoban.py -l test2.txt -m astar
+UUdrrrrUU
+รันไทม์ของดาวฤกษ์: 0.01 วินาที
 
-$ python sokoban.py -l test3.txt -m astar
+$ หลาม sokoban.py -l test3.txt -m astar
 LrdrddDLdllUUdR
-Runtime of astar: 0.01 second.
+รันไทม์ของดาวฤกษ์: 0.01 วินาที
 
-$ python sokoban.py -l test4.txt -m astar
+$ หลาม sokoban.py -l test4.txt -m astar
 llldRRR
-Runtime of astar: 0.00 second.
+รันไทม์ของ astar: 0.00 วินาที
 
-$ python sokoban.py -l test5.txt -m astar
+$ หลาม sokoban.py -l test5.txt -m astar
 uruLdlUURUdRdrUUllLdlU
-Runtime of astar: 0.11 second.
+รันไทม์ของ astar: 0.11 วินาที
 
-$ python sokoban.py -l test6.txt -m astar
+$ หลาม sokoban.py -l test6.txt -m astar
 dlluRdrUUUddrruuulL
-Runtime of astar: 0.02 second.
+รันไทม์ของ astar: 0.02 วินาที
 
-$ python sokoban.py -l test7.txt -m astar
+$ หลาม sokoban.py -l test7.txt -m astar
 LUUUluRddddLdlUUUUluR
-Runtime of astar: 0.16 second.
+รันไทม์ของ astar: 0.16 วินาที
 
-$ python sokoban.py -l test8.txt -m astar
-llDDDDDDldddrruuLuuuuuuurrdLulDDDDDDlllddrrUdlluurRdddrruuLUUUUUUluRdddddddrddlluUdlluurRdrUUUUUU
-Runtime of astar: 0.33 second.
+$ หลาม sokoban.py -l test8.txt -m astar
+llDDDDDDldddrruuลูลูฮูลูลูDDDDDDlllddrrUdlluurRdddrruuLUUUUUUลูRddddddrdlluUdlluurRdrUUUUUU
+รันไทม์ของดาวฤกษ์: 0.33 วินาที
 
 $ python sokoban.py -l level1.txt -m astar
 RurrdLLLrrrdddlDRlLdllUUdRRurruuulldRDrddL
-Runtime of astar: 0.85 second.
+รันไทม์ของ astar: 0.85 วินาที
 ```
 
-表现最好的是A*。BFS、UCS和A*输出的推箱者动作一致，DFS虽然也能找到解决方式但会出现逛该现象，显然其他方法会让结果更简单一些。后续可以提升的方面有：
+นักแสดงที่ดีที่สุดคือ A* ตัวดันกล่องเอาต์พุต BFS, UCS และ A* เคลื่อนที่ในลักษณะเดียวกัน แม้ว่า DFS จะสามารถหาทางออกได้เช่นกัน แต่ปรากฏการณ์นี้จะเกิดขึ้น แน่นอน วิธีอื่นๆ จะทำให้ผลลัพธ์ง่ายขึ้น ด้านที่สามารถปรับปรุงได้ในอนาคต ได้แก่ :
 
-* 定义更简单的SSG
-* 更加全面的dead pattern
-* 更加适合的cost function和heuristic function
+* กำหนด SSG ที่ง่ายกว่า
+* รูปแบบตายที่ครอบคลุมมากขึ้น
+* ฟังก์ชันต้นทุนและฟังก์ชันฮิวริสติกที่เหมาะสมกว่า
