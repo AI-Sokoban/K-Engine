@@ -3,7 +3,30 @@ import collections
 import numpy as np
 import heapq
 import time
-import psutil
+import os,psutil
+# from memory_profiler import profile
+
+# #######
+# # inner psutil function
+# def process_memory():
+#     process = psutil.Process(os.getpid())
+#     mem_info = process.memory_info()
+#     return mem_info.rss
+ 
+# # decorator function
+# def profile(func):
+#     def wrapper(*args, **kwargs):
+ 
+#         mem_before = process_memory()
+#         result = func(*args, **kwargs)
+#         mem_after = process_memory()
+#         print("{} :consumed memory: ({:,})".format(
+#             func.__name__,
+#             mem_before - mem_after,mem_before/1024**2,mem_after/1024**2))
+ 
+#         return result
+#     return wrapper
+######
 
 class PriorityQueue:
     """Define a PriorityQueue data structure that will be used"""
@@ -154,6 +177,7 @@ def breadthFirstSearch():
                 frontier.append(node + [(newPosPlayer, newPosBox)])
                 actions.append(node_action + [action[-1]])
 
+
 def depthFirstSearch():
     """Implement depthFirstSearch approach"""
     beginBox = PosOfBoxes(gameState)
@@ -254,7 +278,7 @@ def readCommand(argv):
     
     parser = OptionParser()
     parser.add_option('-l', '--level', dest='sokobanLevels',
-                      help='level of game to play', default='test14.txt')
+                      help='level of game to play', default='test1.txt')
     parser.add_option('-m', '--method', dest='agentMethod',
                       help='research method', default='bfs')
     args = dict()
@@ -265,8 +289,11 @@ def readCommand(argv):
     args['method'] = options.agentMethod
     return args
 
+
 if __name__ == '__main__':
+    
     p = psutil.Process()
+    process = psutil.Process(os.getpid())
     time_start = time.time()
     
 
@@ -289,4 +316,4 @@ if __name__ == '__main__':
     time_end=time.time()
     print('Runtime of %s: %.2f second.' %(method, time_end-time_start))
     print('Peak Memory Usage : ',(p.memory_info().peak_wset) / 1024**2,' bytes')
-    # print('Peak Memory Usage : ',psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2,' bytes')
+    print('Memory Usage : ',(process.memory_info().rss)/ 1024 ** 2,' Mb')

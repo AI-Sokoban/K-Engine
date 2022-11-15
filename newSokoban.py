@@ -6,8 +6,12 @@ import time
 from newRender import Renderer
 from board import BoardManager
 import pygame
+import psutil,os
 from renderSolution import renderSolution
 
+# test memory
+# from guppy import hpy
+# import numpy as np
 
 class PriorityQueue:
     """Define a PriorityQueue data structure that will be used"""
@@ -161,7 +165,6 @@ def isFailed(posBox):
 
 
 """Implement all approcahes"""
-
 
 def breadthFirstSearch(isRender=False):
     """Implement breadthFirstSearch approach"""
@@ -390,8 +393,9 @@ def readCommand(argv):
 
 
 if __name__ == '__main__':
-    
+    p = psutil.Process()
     time_start = time.time()
+
     layout, method, isRender = readCommand(sys.argv[1:]).values()
     gameState = transferToGameState(layout)
     posWalls = PosOfWalls(gameState)
@@ -413,6 +417,9 @@ if __name__ == '__main__':
     else:
         raise ValueError('Invalid method.')
     time_end = time.time()
+
     print('Runtime of %s: %.2f second.' % (method, time_end-time_start))
+    print('Peak Memory Usage : ',(p.memory_info().peak_wset) / 1024**2,' MB')
+
     if(isRender):
         renderSolution(layout, solution)
