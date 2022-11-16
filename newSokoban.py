@@ -444,8 +444,40 @@ def readCommand(argv):
     args['renderSearch'] = options.search
     args['renderResult'] = options.result
 
-
     return args
+
+"""Create Text result file"""
+
+def createTextResultFile(ppbaslengformat=False):
+
+    # write solution detail to file (default format)
+    resultDir = "results"
+    filename = f"solution-{method}-{level}"
+    relPath = os.path.join(resultDir, filename)
+    with open(relPath, "w") as f:
+        now = datetime.now()
+        nowStrft = now.strftime("%d/%m/%Y, %H:%M:%S")
+        f.write(f"Finished at: {nowStrft}\n")
+        f.write(f"Number of action: {numAction}\n")
+        f.write(f"Action : {','.join(solution).replace(',', '')} \n")
+        f.write(f"Time usage: {timeUsage} seconds\n")
+        f.write(f"Memory usage: {memoryUsage} bytes\n")
+        f.write("\n")
+
+    if ppbaslengformat == False:
+        return
+
+    # write solution detail to file (ppbasleng format)
+    methods_format = {'astar':'A*','dfs':'DFS','bfs':'BFS','idastar':'IDA*'}
+    resultDir = "results(PPBASLENG_Format)"
+    filename = f"solution-{method}-{level}"
+    relPath = os.path.join(resultDir, filename)
+    with open(relPath, "w") as f:
+        f.write(methods_format[method]+"\t")
+        f.write(str(numAction)+"\t")
+        f.write(str(round(timeUsage, 2))+"\t")
+        f.write("0"+"\t")
+        f.write(str(round(memoryUsage, 2)))
 
 
 if __name__ == '__main__':
@@ -483,19 +515,6 @@ if __name__ == '__main__':
     print('Runtime of %s: %.2f second.' % (method,timeUsage ))
     print('Peak Memory Usage:',memoryUsage,'MB')
 
-
-    # write solution detail to file
-    resultDir = "results"
-    filename = f"solution-{method}-{level}"
-    relPath = os.path.join(resultDir, filename)
-    with open(relPath, "w") as f:
-        now = datetime.now()
-        nowStrft = now.strftime("%d/%m/%Y, %H:%M:%S")
-        f.write(f"Finished at: {nowStrft}\n")
-        f.write(f"Number of action: {numAction}\n")
-        f.write(f"Action : {','.join(solution).replace(',', '')} \n")
-        f.write(f"Time usage: {timeUsage} seconds\n")
-        f.write(f"Memory usage: {memoryUsage} bytes\n")
-        f.write("\n")
+    createTextResultFile(ppbaslengformat=True)
 
     if(renderResult): renderSolution(layout, solution)

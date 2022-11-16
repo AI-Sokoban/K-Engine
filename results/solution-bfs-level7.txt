@@ -1,0 +1,6 @@
+Finished at: 16/11/2022, 20:20:29
+Number of action: 51
+Action : UUllUrRRurrdLdLLuRdrUUdllluulldRurDlddRluRRRdrUluuR 
+Time usage: 10.105283737182617 seconds
+Memory usage: 66.55859375 bytes
+
