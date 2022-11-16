@@ -117,6 +117,34 @@ def legalActions(posPlayer, posBox):
     # e.g. ((0, -1, 'l'), (0, 1, 'R'))
     return tuple(tuple(x) for x in legalActions)
 
+def legalNodes(currentNode,currentNodeAction):
+    """Return all legal actions for the agent in the current game state"""
+    allActions = [[-1, 0, 'u', 'U'], [1, 0, 'd', 'D'],
+                  [0, -1, 'l', 'L'], [0, 1, 'r', 'R']]
+    posPlayer=currentNode[-1][0]     
+    posBox=currentNode[-1][1]
+    xPlayer, yPlayer = posPlayer
+    child_node=PriorityQueue()
+    child_action=PriorityQueue()
+    for action in allActions:
+        x1, y1 = xPlayer + action[0], yPlayer + action[1]
+        if (x1, y1) in posBox:  # the move was a push
+            action.pop(2)  # drop the little letter
+        else:
+            action.pop(3)  # drop the upper letter
+        if isLegalAction(action, posPlayer, posBox):
+            newPosPlayer, newPosBox = updateState(posPlayer, posBox, action)
+            if isFailed(newPosBox):
+                continue
+            Heuristic = heuristic(newPosPlayer, newPosBox)
+            Cost = cost(currentNodeAction[1:])
+            child_node.push((newPosPlayer, newPosBox),Heuristic+Cost)
+            child_action.push(action,Heuristic+Cost)
+        else:
+            continue
+    # e.g. ((0, -1, 'l'), (0, 1, 'R'))
+    return child_node,child_action
+
 
 def updateState(posPlayer, posBox, action):
     """Return updated game state after an action is taken"""
@@ -334,25 +362,16 @@ def greedyBestFirstSearch(renderSearch=False):
                 actions.push(node_action + [action[-1]], Heuristic )
 
 
-def iterative_deepening_a_star():
-    """
-    Performs the iterative deepening A Star (A*) algorithm to find the shortest path from a start to a target node.
-    Can be modified to handle graphs by keeping track of already visited nodes.
-    :param tree:      An adjacency-matrix-representation of the tree where (x,y) is the weight of the edge or 0 if there is no edge.
-    :param heuristic: An estimation of distance from node x to y that is guaranteed to be lower than the actual distance. E.g. straight-line distance.
-    :param start:      The node to start from.
-    :param goal:      The node we're searching for.
-    :return: number shortest distance to the goal node. Can be easily modified to return the path.
-    """
+def iterative_deepening_a_star(renderSearch=False):
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
     threshold = heuristic(beginPlayer, beginBox)
-    # print('up',beginPlayer, beginBox)
+
     startState = [(beginPlayer, beginBox)]
     startAction=[0]
     while True:
         # print("Iteration with threshold: " + str(threshold))
-        distance,solution = iterative_deepening_a_star_rec(startState,startAction, 0, threshold)
+        distance,solution = iterative_deepening_a_star_rec(startState,startAction, 0, threshold,renderSearch)
         if distance == float("inf"):
             # Node not found and no more nodes to visit
             return -1
@@ -364,98 +383,42 @@ def iterative_deepening_a_star():
             # if it hasn't found the node, it returns the (positive) next-bigger threshold
             threshold = distance
 
-def iterative_deepening_a_star_rec( node,node_action, distance, threshold,isRender=True):
-    """
-    Performs DFS up to a depth where a threshold is reached (as opposed to interative-deepening DFS which stops at a fixed depth).
-    Can be modified to handle graphs by keeping track of already visited nodes.
-    :param tree:      An adjacency-matrix-representation of the tree where (x,y) is the weight of the edge or 0 if there is no edge.
-    :param heuristic: An estimation of distance from node x to y that is guaranteed to be lower than the actual distance. E.g. straight-line distance.
-    :param node:      The node to continue from.
-    :param goal:      The node we're searching for.
-    :param distance:  Distance from start node to current node.
-    :param threshold: Until which distance to search in this iteration.
-    :return: number shortest distance to the goal node. Can be easily modified to return the path.
-     """
-    # print("Visiting Node " + str(node))
-
-
-    # print('down',node[-1][0],node[-1][1])
-    estimate = distance + heuristic(node[-1][0],node[-1][1])
+def iterative_deepening_a_star_rec( node,node_action, distance, threshold,renderSearch):
+    estimate = distance+heuristic(node[-1][0], node[-1][1])
+    # print('estimate(f(n)): ',distance,'+',heuristic(node[-1][0], node[-1][1]),'=',estimate)
+    # print('threshold:',threshold)
+    
     if estimate > threshold:
         # print("Breached threshold with heuristic: " + str(estimate))
         return estimate,node_action[1:]
     if isEndState(node[-1][-1]):
         # We have found the goal node we we're searching for
         print(','.join(node_action[1:]).replace(',', ''))
-        return -distance,node_action[1:]
-    # ...then, for all neighboring nodes....
+        return -100,node_action[1:]
+    
     min = float("inf")
-    for action in legalActions(node[-1][0], node[-1][1]):
-        newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
-        
-        if isRender:
-            renderer.render(newPosPlayer, newPosBox)
-            
-        if isFailed(newPosBox):
-            continue
-        if (newPosPlayer, newPosBox) not in node:
-            newNode = node + [(newPosPlayer, newPosBox)]
-            newAction=node_action + [action[-1]]
+
+    child_node,child_action=legalNodes(node,node_action)
+    # ...then, for all neighboring nodes....
+    for i in range(len(child_node.Heap)):
+        new_node=child_node.pop()
+        new_action=child_action.pop()
+        if new_node not in node :
+            node.append(new_node)
+            node_action.append(new_action[-1])
             Cost = cost(node_action[1:])
-            t,_ = iterative_deepening_a_star_rec(newNode,newAction, distance + Cost, threshold)
+            # print('Cost(g(n)): ',Cost)
+            if(renderSearch):
+                renderer.render(new_node[0], new_node[1])
+            t, solution = iterative_deepening_a_star_rec(node,node_action, Cost, threshold,renderSearch)
             if t < 0:
-                return t,node_action[1:]
+                return t, solution
             elif t < min:
                 min = t
-            newNode.pop()
-            newAction.pop()
-             
-    # for i in range(len(tree[node])):
-    #     if tree[node][i] != 0:
-    #         t = iterative_deepening_a_star_rec(tree, heuristic, i, goal, distance + tree[node][i], threshold)
-    #         if t < 0:
-    #             # Node found
-    #             return t
-    #         elif t < min:
-    #             min = t
+            node.pop()
+            node_action.pop()
+    return min, node_action[1:]
 
-    return min,node_action[1:]
-# def best_first_search(actual_Src, target, n):
-#     visited = [False] * n
-#     pq = PriorityQueue()
-#     pq.put((0, actual_Src))
-#     visited[actual_Src] = True
-     
-#     while pq.empty() == False:
-#         u = pq.get()[1]
-#         # Displaying the path having lowest cost
-#         print(u, end=" ")
-#         if u == target:
-#             break
- 
-#         for v, c in graph[u]:
-#             if visited[v] == False:
-#                 visited[v] = True
-#                 pq.put((c, v))
-#     print()
-
-# // Pseudocode for Best First Search
-# Best-First-Search(Graph g, Node start)
-#     1) Create an empty PriorityQueue
-#        PriorityQueue pq;
-#     2) Insert "start" in pq.
-#        pq.insert(start)
-#     3) Until PriorityQueue is empty
-#           u = PriorityQueue.DeleteMin
-#           If u is the goal
-#              Exit
-#           Else
-#              Foreach neighbor v of u
-#                 If v "Unvisited"
-#                     Mark v "Visited"                    
-#                     pq.insert(v)
-#              Mark u "Examined"                    
-# End procedure
 """Read command"""
 
 
@@ -507,6 +470,8 @@ if __name__ == '__main__':
         solution = uniformCostSearch(renderSearch)
     elif method == 'gbfs':
         solution = greedyBestFirstSearch(renderSearch)
+    elif method=='idastar':
+        solution = iterative_deepening_a_star(renderSearch)
     else:
         raise ValueError('Invalid method.')
     time_end = time.time()
