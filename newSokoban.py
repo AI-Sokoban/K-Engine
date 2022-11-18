@@ -476,7 +476,6 @@ def createTextResultFile(csvFormat=False):
         f.write(methods_format[method]+"\t")
         f.write(str(numAction)+"\t")
         f.write(str(round(timeUsage, 2))+"\t")
-        f.write("0"+"\t")
         f.write(str(round(memoryUsage, 2)))
 
 
