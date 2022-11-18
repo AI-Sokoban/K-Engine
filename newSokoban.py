@@ -448,7 +448,7 @@ def readCommand(argv):
 
 """Create Text result file"""
 
-def createTextResultFile(ppbaslengformat=False):
+def createTextResultFile(csvFormat=False):
 
     # write solution detail to file (default format)
     resultDir = "results"
@@ -464,12 +464,12 @@ def createTextResultFile(ppbaslengformat=False):
         f.write(f"Memory usage: {memoryUsage} bytes\n")
         f.write("\n")
 
-    if ppbaslengformat == False:
+    if csvFormat == False:
         return
 
-    # write solution detail to file (ppbasleng format)
+    # write solution detail to file (csv format)
     methods_format = {'astar':'A*','dfs':'DFS','bfs':'BFS','idastar':'IDA*'}
-    resultDir = "results(PPBASLENG_Format)"
+    resultDir = "results_csv"
     filename = f"solution-{method}-{level}"
     relPath = os.path.join(resultDir, filename)
     with open(relPath, "w") as f:
@@ -515,6 +515,6 @@ if __name__ == '__main__':
     print('Runtime of %s: %.2f second.' % (method,timeUsage ))
     print('Peak Memory Usage:',memoryUsage,'MB')
 
-    createTextResultFile(ppbaslengformat=True)
+    createTextResultFile(csvFormat=True)
 
-    if(renderResult): renderSolution(layout, solution)
+    if renderResult: renderSolution(layout, solution)
