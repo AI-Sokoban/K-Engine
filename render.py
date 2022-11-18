@@ -19,7 +19,7 @@ DEFAULT_RENDER_MAP = {
 }
 
 DEFAULT_BOX_SIZE = wall.get_width()
-DEFAULT_SCREEN_SIZE = (600, 400)
+DEFAULT_SCREEN_SIZE = (1280, 720)
 
 
 class Renderer:
